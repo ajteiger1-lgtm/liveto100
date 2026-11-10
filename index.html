@@ -86,14 +86,15 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;z-index:20;
   padding:14px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
   background:linear-gradient(180deg,transparent,var(--bg) 42%)}
-.tabs{position:relative;display:grid;grid-template-columns:repeat(3,1fr);width:100%;max-width:480px;background:var(--surface);border-radius:999px;padding:6px;box-shadow:var(--sh-card)}
-.knob{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 3);border-radius:999px;background:var(--ink);
+.tabs{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;max-width:480px;background:var(--surface);border-radius:999px;padding:6px;box-shadow:var(--sh-card)}
+.knob{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 4);border-radius:999px;background:var(--ink);
   box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 10px 18px -8px rgba(0,0,0,.55);transition:transform .55s cubic-bezier(.3,1.3,.45,1)}
 .knob.go{animation:squish .55s ease}
 @keyframes squish{0%{scale:1 1}35%{scale:1.12 .93}100%{scale:1 1}}
 .tabs[data-i="1"] .knob{transform:translateX(100%)}
 .tabs[data-i="2"] .knob{transform:translateX(200%)}
-.tab{position:relative;z-index:1;min-height:50px;border-radius:999px;font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink2);transition:color .25s ease}
+.tabs[data-i="3"] .knob{transform:translateX(300%)}
+.tab{position:relative;z-index:1;min-height:50px;border-radius:999px;font-family:var(--display);font-weight:600;font-size:16.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);transition:color .25s ease}
 .tab[aria-selected="true"]{color:var(--bg)}
 
 /* home */
@@ -265,6 +266,35 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
 .mv{padding:8px 12px;border-radius:999px;background:var(--surface);box-shadow:var(--sh-key);font-size:14px;font-weight:500;color:var(--ink2)}
 .mv[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);box-shadow:none}
 </style>
+<style>
+/* notes, supersets, left/right, strength chart */
+.setdone,.setwait{flex-wrap:wrap}
+.snote{flex-basis:100%;font-size:13px;color:var(--ink2);line-height:1.35;padding-left:32px;margin-top:-2px}
+.setdone .rirtag{margin-left:auto}
+.setdone .rirtag+.tick{margin-left:0}
+.rnd{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);padding:8px 2px 0}
+.rnd:first-child{padding-top:0}
+.setdone .n,.setwait .n{width:28px}
+.legend{display:flex;flex-direction:column;gap:6px}
+.lg{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:500}
+.lg b{width:24px;height:24px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--display);font-size:16px;flex:none}
+.last div+div{margin-top:4px}
+.sidelab{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:-6px}
+.sidelab:not(:first-child){margin-top:2px}
+.fullrow{scroll-margin-top:84px}
+.sets-list .nt{border-top:0;padding-top:0;margin-top:-4px}
+.sets-list .nt span{font-size:13px;color:var(--ink2)}
+.hnote{margin-top:-4px;padding-left:2px}
+.chart{width:100%;height:auto;display:block}
+.scalenote{color:var(--ink2);min-height:20px}
+.scalenote b{color:var(--ink)}
+.daycard .rx{flex:none}
+/* fit three-digit weights and BW between the buttons; fit four tabs */
+.rbtn{width:36px;height:36px;font-size:22px}
+.stp .ctl{gap:2px}
+.val{font-size:32px}
+.tab{font-size:13.5px;letter-spacing:.01em;padding:0;min-width:0;overflow:hidden}
+</style>
 <main class="wrap" id="app"></main>
 <nav class="tabbar" id="tabbar" aria-label="Main">
   <div class="tabs" role="tablist" data-i="0">
@@ -272,6 +302,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{o
     <button class="tab" role="tab" data-tab="today" aria-selected="true">Today</button>
     <button class="tab" role="tab" data-tab="week" aria-selected="false">Week</button>
     <button class="tab" role="tab" data-tab="history" aria-selected="false">History</button>
+    <button class="tab" role="tab" data-tab="strength" aria-selected="false">Strength</button>
   </div>
 </nav>
 <div class="toast" id="toast" role="status" hidden></div>
@@ -307,16 +338,14 @@ const SESSIONS = {
       ]},
       { title: 'Superset A', items: [
         L('pullup', 'Pull-up', 4, 8, { load: 'bw', step: 5, how: 'Full hang at the bottom, chin over the bar. Add weight only when 8 reps feel easy.' }),
-        L('dbohp', 'Standing dumbbell overhead press', 3, 8, { step: 5, how: 'Glutes tight, ribs down. Press up and slightly back so the dumbbells finish over your ears.' })
+        L('dbohp', 'Standing dumbbell overhead press', 3, 8, { step: 5, how: 'Glutes tight, ribs down. Press up and slightly back so the dumbbells finish over your ears.' }),
+        L('pallof', 'Pallof press', 3, 10, { unit: 'per side', step: 5, how: 'Cable or band at chest height. Press out and resist the pull. Hips and shoulders stay square.' })
       ]},
       { title: 'Superset B', items: [
-        L('slrdl', 'Single-leg RDL, kettlebell', 3, 8, { how: 'Hinge from the hip with a long spine. Back leg reaches behind you. Slight bend in the standing knee. Use a light bell while you learn it.' }),
-        L('suitcase', 'Suitcase carry', 3, 40, { unit: 'm per side', how: 'One heavy kettlebell or dumbbell at your side. Stay tall, do not lean. Ribs stacked over hips.' })
-      ]},
-      { title: 'Core', items: [
-        L('pallof', 'Pallof press', 3, 10, { unit: 'per side', step: 5, how: 'Cable or band at chest height. Press out and resist the pull. Hips and shoulders stay square.' }),
+        L('slrdl', 'Single-leg RDL, kettlebell', 3, 8, { unit: 'per side', how: 'Hinge from the hip with a long spine. Back leg reaches behind you. Slight bend in the standing knee. Use a light bell while you learn it.' }),
+        L('suitcase', 'Suitcase carry', 3, 40, { unit: 'm per side', how: 'One heavy kettlebell or dumbbell at your side. Stay tall, do not lean. Ribs stacked over hips.' }),
         L('lddb', 'Loaded dead bug', 3, 10, { unit: 'per side', step: 2.5, how: 'Hold a dumbbell over your chest. Lower opposite arm and leg slowly. Low back stays glued to the floor.' })
-      ]}
+      ]},
     ],
     cool: [
       ['Couch stretch', '60 sec per side', 'Squeeze the glute of the back leg. Breathe into the front of the hip.'],
@@ -398,14 +427,14 @@ const SESSIONS = {
       ]},
       { title: 'Superset A', items: [
         L('chinup', 'Chin-up', 4, 6, { load: 'bw', how: 'Palms facing you. Full hang, chin over the bar, control the way down.' }),
-        L('pushpress', 'Push press', 4, 5, { how: 'Dip a few inches, drive the legs and press. The legs start it, the shoulders finish it.' })
+        L('pushpress', 'Push press', 4, 5, { how: 'Dip a few inches, drive the legs and press. The legs start it, the shoulders finish it.' }),
+        L('woodchop', 'Band woodchop, low to high', 3, 10, { unit: 'per side', step: 5, how: 'Rotate through the hips, arms stay long. Pivot the back foot.' })
       ]},
       { title: 'Superset B', items: [
         L('bss', 'Bulgarian split squat', 3, 8, { unit: 'per side', step: 5, how: 'Back foot on a bench. Front shin tall, lower straight down. Dumbbells at your sides.' }),
         L('sbcarry', 'Sandbag bear-hug carry', 3, 30, { unit: 'm', step: 5, how: 'Hug the bag tight to the chest. Small steps, upright posture, breathe.' })
       ]},
       { title: 'Core', items: [
-        L('woodchop', 'Band woodchop, low to high', 3, 10, { unit: 'per side', step: 5, how: 'Rotate through the hips, arms stay long. Pivot the back foot.' }),
         L('hangknee', 'Hanging knee raise', 3, 10, { load: 'bw', step: 5, how: 'Hang from the bar, tilt the pelvis up to bring the knees to your chest. No swinging.' })
       ]}
     ],
@@ -499,6 +528,18 @@ Object.values(SESSIONS).forEach(s => s.blocks.forEach(b => b.items.forEach(ex =>
 
 /* Data epoch: bump this to wipe every saved workout (this device and the cloud copy). */
 const EPOCH = 'e2';
+
+/* Supersets are logged together on one card, A B A B. Weekend days use the recovery scale. */
+Object.values(SESSIONS).forEach(s => {
+  s.scale = (s.key === 'sat' || s.key === 'sun') ? 'recov' : 'effort';
+  s.blocks.forEach(b => { b.group = /^Superset/.test(b.title) && b.items.length > 1 && b.items.every(x => x.kind === 'lift'); });
+});
+const EFFORT = ["Didn't feel like a workout", 'Barely woke up', 'Very easy', 'Easy', 'Almost there', 'Just right', 'Solid', 'Hard', 'Very hard', 'Nearly empty', "Gassed, couldn't finish"];
+const RECOV = ['Wrecked', 'Drained', 'Heavy', 'Tired', 'A bit flat', 'Okay', 'Decent', 'Good', 'Fresh', 'Springy', 'Fully recharged'];
+
+/* Data safety: exercise ids are permanent. A move that leaves the program gets moved here, unchanged,
+   so its history keeps its name, units and charts. */
+const LEGACY_EX = [];
 /* ---------- CORE: state, dates, persistence ---------- */
 const S = { tab: 'today', sessions: {}, activeId: null, draft: {}, editing: null, sheet: null, cloud: 'pending', mode: 'focus', editStep: null, preview: null, histDay: null, histMonth: null, rateOpen: null, delAsk: null };
 let DB = null;
@@ -527,6 +568,14 @@ function todayKey() {
   return JS_DAY[p.today.getDay()];
 }
 const roundTo = (v, step) => Math.round(v / step) * step;
+/* left/right: a "per side" move stores the left side in w/r and the right side in w2/r2 */
+const isSided = ex => /per side/.test((ex && ex.unit) || '');
+const sidesOf = (ex, st) => (isSided(ex) && st && st.r2 != null) ? [{ w: st.w || 0, r: st.r || 0 }, { w: st.w2 || 0, r: st.r2 || 0 }] : [{ w: (st && st.w) || 0, r: (st && st.r) || 0 }];
+function setShort(ex, st) {
+  const f = (w, r, p) => (w ? w + '×' : '') + (p || '') + r;
+  if (isSided(ex) && st.r2 != null) return (st.w || 0) === (st.w2 || 0) ? f(st.w, st.r, 'L') + ' ' + 'R' + st.r2 : 'L ' + f(st.w, st.r) + ' · R ' + f(st.w2, st.r2);
+  return f(st.w, st.r);
+}
 /* a session only counts (history, cloud) once something is logged or it is finished */
 function hasContent(s) {
   if (!s) return false;
@@ -548,9 +597,10 @@ function recommend(ex, week, exceptId) {
   let w = hasW ? (ex.start || 0) : 0, why = hasW && ex.start ? 'Starting guess' : '';
   const sets = last && last.e.sets ? last.e.sets.filter(Boolean) : [];
   if (sets.length) {
-    const topW = Math.max(...sets.map(x => x.w || 0));
+    const all = sets.flatMap(x => sidesOf(ex, x));
+    const topW = Math.max(...all.map(x => x.w || 0));
     const minRir = Math.min(...sets.map(x => x.rir == null ? 2 : x.rir));
-    const hit = sets.every(x => (x.r || 0) >= ex.reps);
+    const hit = all.every(x => (x.r || 0) >= ex.reps);
     w = topW; why = 'Matching last time';
     if (hasW && hit && minRir >= 2 && sets.length >= 2) { w = topW + ex.step; why = 'Last time felt easy'; }
     else if (hasW && minRir === 0 && !hit) { w = Math.max(0, topW - ex.step); why = 'Last time was at your limit'; }
@@ -593,7 +643,7 @@ function lastText(ex, last) {
   if (ex.kind === 'cardio') {
     const e = last.e; return `<b>Last:</b> ${e.min} min${e.dist ? ' · ' + e.dist + ' mi' : ''}`;
   }
-  const parts = last.e.sets.map(s => `${s.w ? s.w + '×' : ''}${s.r}`);
+  const parts = last.e.sets.filter(Boolean).map(s => setShort(ex, s));
   return `<b>Last:</b> ${esc(parts.join(', '))}`;
 }
 function suggestion(ex, last) {
@@ -667,7 +717,7 @@ async function initCloud() {
   } catch (e) { S.cloud = 'local'; clearTimeout(timer); paintSync(); }
 }
 function paintSync() {
-  const t = { ok: 'Synced', pending: 'Connecting…', slow: 'Cloud sync not reachable yet. Saving on this device.', local: 'Saved on this phone.', error: 'Saved on this device. Will sync when it can.' }[S.cloud];
+  const t = { ok: 'Synced', pending: 'Connecting…', slow: 'Cloud sync not reachable yet. Saving on this device.', local: 'Saved on this device only.', error: 'Saved on this device. Will sync when it can.' }[S.cloud];
   document.querySelectorAll('[data-sync]').forEach(n => { n.textContent = S.cloud === 'ok' ? '' : t; });
 }
 
@@ -676,6 +726,34 @@ let toastT;
 function toast(msg) {
   let t = $('#toast'); if (!t) return;
   t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2200);
+}
+
+/* ---------- data safety: versioned storage, upgrades never delete ---------- */
+const SCHEMA = 2;
+function upgradeSession(s) {
+  if (!s || typeof s !== 'object') return s;
+  s.entries = s.entries || {}; s.checks = s.checks || {}; s.times = s.times || {}; s.open = s.open || {};
+  // future format changes go here, keyed on s.v, e.g. if ((s.v || 1) < 3) { ...reshape...; }
+  s.v = SCHEMA; return s;
+}
+function migrateStorage() {
+  const v = lsGet('ss.schema', 0), ss = lsGet('ss.sessions', {});
+  if (v < SCHEMA) {
+    if (Object.keys(ss).length) lsSet('ss.snapshot.v' + v + '.' + dateKey(new Date()), ss); // untouched copy before any change
+    Object.values(ss).forEach(upgradeSession);
+    lsSet('ss.sessions', ss); lsSet('ss.schema', SCHEMA);
+    try { Object.keys(localStorage).filter(k => k.indexOf('ss.snapshot.') === 0).sort().slice(0, -3).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+  }
+}
+const finishedCount = () => Object.values(S.sessions).filter(hasContent).length;
+function backupAge() { const t = lsGet('ss.lastBackup', 0); return t ? Math.floor((Date.now() - t) / 86400000) : null; }
+const backupLine = () => { const a = backupAge(); return a == null ? 'No backup saved yet.' : a === 0 ? 'Last backup: today.' : `Last backup: ${a} day${a === 1 ? '' : 's'} ago.`; };
+function backupNudge() {
+  if (!finishedCount()) return '';
+  const a = backupAge(); if (a != null && a < 7) return '';
+  return `<section class="card" style="display:flex;flex-direction:column;gap:10px"><div class="eyebrow">Back up</div>
+    <p class="small muted" style="margin:0">${a == null ? 'You have workouts logged and no backup yet.' : `Your last backup was ${a} days ago.`} Saving one takes a few seconds.</p>
+    <button class="btn ghost sm" data-act="export">Export backup</button></section>`;
 }
 /* ---------- VIEWS: today, week, history, preview ---------- */
 const DAYFULL = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
@@ -738,6 +816,7 @@ function viewToday() {
     <button class="btn primary" data-act="start">${btn}</button>
     <button class="btn quiet" data-act="swap">Swap today's workout</button>
   </section>
+  ${backupNudge()}
   <div class="syncnote" data-sync></div>`;
 }
 
@@ -762,7 +841,7 @@ function viewWeek() {
 
 function setLine(ex, e) {
   if (!e) return '';
-  if (e.sets) return e.sets.filter(Boolean).map(s => `${s.w ? s.w + '×' : ''}${s.r}${s.rir != null ? ' (' + s.rir + ')' : ''}`).join(', ');
+  if (e.sets) return e.sets.filter(Boolean).map(s => `${setShort(ex, s)}${s.rir != null ? ' (' + s.rir + ')' : ''}`).join(', ');
   if (e.min) return `${e.min} min${e.dist ? ' · ' + e.dist + ' mi' : ''}`;
   return '';
 }
@@ -770,16 +849,21 @@ const ICON_FWD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" st
 function histDetail(s) {
   const sess = SESSIONS[s.key], lines = [];
   if (sess) sess.blocks.forEach(b => b.items.forEach(ex => {
-    const t = setLine(ex, s.entries && s.entries[ex.id]); const tm = s.times && s.times[ex.id];
+    const en = s.entries && s.entries[ex.id], t = setLine(ex, en); const tm = s.times && s.times[ex.id];
     if (t) lines.push(`<div class="ex"><span>${esc(ex.name)}</span><span class="tnum">${esc(t)}${tm >= 1 ? ' · ' + fmtDur(tm) : ''}</span></div>`);
+    if (en && en.sets) en.sets.forEach((st, i) => { if (st && st.note) lines.push(`<div class="small muted hnote">${esc(ex.name)}, set ${i + 1}: “${esc(st.note)}”</div>`); });
+    if (en && en.note) lines.push(`<div class="small muted hnote">${esc(ex.name)}: “${esc(en.note)}”</div>`);
   }));
+  const known = new Set(); if (sess) sess.blocks.forEach(b => b.items.forEach(x => known.add(x.id)));
+  Object.keys(s.entries || {}).forEach(id => { if (known.has(id)) return; const ex = findEx(id) || {}, t = setLine(ex, s.entries[id]); if (t) lines.push(`<div class="ex"><span>${esc(ex.name || id)}</span><span class="tnum">${esc(t)}</span></div>`); });
+  sess && sess.blocks.forEach(b => { if (b.group) { const gid = 'grp:' + b.items.map(x => x.id).join('+'), tm = s.times && s.times[gid]; if (tm >= 1) lines.push(`<div class="ex"><span class="muted">${esc(b.title)} time</span><span class="tnum">${fmtDur(tm)}</span></div>`); } });
   const n = s.entries ? Object.values(s.entries).reduce((a, e) => a + (e.sets ? e.sets.filter(Boolean).length : 0), 0) : 0;
   const names = ids => (ids || []).map(id => (findEx(id) || {}).name).filter(Boolean).join(', ');
   const asking = S.delAsk === s.id;
   return `<article class="card ex">
     <div class="row between"><span><span class="h3" style="display:block">${esc(s.name)}</span><span class="small muted">Week ${s.week} · ${s.done ? 'finished' : 'not finished'}</span></span>
       <span class="small muted tnum" style="text-align:right">${s.done ? fmtDur(s.durationSec || 0) : ''}${n ? '<br>' + n + ' sets' : ''}</span></div>
-    ${s.rating != null ? `<span class="pill" style="align-self:flex-start">Rated ${s.rating} / 10</span>` : ''}
+    <div class="row" style="gap:6px;flex-wrap:wrap">${s.rating != null ? `<span class="pill">Rated ${s.rating} / 10</span>` : ''}${s.effort != null ? `<span class="pill">Effort ${s.effort} · ${esc(EFFORT[s.effort])}</span>` : ''}${s.recov != null ? `<span class="pill">Recovered ${s.recov} · ${esc(RECOV[s.recov])}</span>` : ''}</div>
     <div class="hist-body" style="margin-top:0;padding-top:0;border-top:0">${lines.join('') || '<span class="muted">No sets logged.</span>'}
       ${names(s.loved) ? `<div><b>Loved:</b> <span class="muted">${esc(names(s.loved))}</span></div>` : ''}
       ${names(s.meh) ? `<div><b>Not a fan:</b> <span class="muted">${esc(names(s.meh))}</span></div>` : ''}
@@ -817,7 +901,7 @@ function viewHistory() {
     </section>
     ${detail}
     <section class="card" style="display:flex;flex-direction:column;gap:10px"><div class="eyebrow">Backup</div>
-      <p class="small muted" style="margin:0">Your workouts live on this phone. Save a backup file now and then, or to move to a new phone.</p>
+      <p class="small muted" style="margin:0">Your workouts live on this phone. Save a backup file every week, or before switching phones. ${esc(backupLine())}</p>
       <div class="row" style="gap:8px"><button class="btn ghost sm grow" data-act="export">Export backup</button>
       <label class="btn ghost sm grow" style="cursor:pointer">Import<input type="file" id="importfile" accept="application/json,.json" hidden></label></div></section>
     <div class="syncnote" data-sync></div>`;
@@ -845,6 +929,106 @@ function viewPreview(key) {
     ${differs ? `<div class="small muted" style="text-align:center">Starting it makes it today's workout.</div>` : ''}
   </section>`;
 }
+/* ---------- STRENGTH: progress over time for every lift you have logged ---------- */
+const REPLIKE = /^(reps|per side|taps)$/;
+function allLifts() {
+  const seen = {}, out = [];
+  ORDER.forEach(k => SESSIONS[k].blocks.forEach(b => b.items.forEach(ex => { if (ex.kind === 'lift' && !seen[ex.id]) { seen[ex.id] = 1; out.push(ex); } })));
+  LEGACY_EX.forEach(ex => { if (ex.kind === 'lift' && !seen[ex.id]) { seen[ex.id] = 1; out.push(ex); } });
+  return out;
+}
+function exHistory(ex) { // oldest first
+  const out = [];
+  sortedSessions().slice().reverse().forEach(s => {
+    if (!hasContent(s)) return;
+    const e = s.entries && s.entries[ex.id]; if (!e || !e.sets) return;
+    const sets = e.sets.filter(Boolean); if (sets.length) out.push({ date: s.date, sets, sid: s.id });
+  });
+  return out;
+}
+/* 'e': weight you could do for N reps (estimated from your best set, counting reps you left in the tank)
+   'w': top weight, 'r': best reps or time when there is no added weight */
+function exModeOf(ex, hist) {
+  let maxW = 0; hist.forEach(x => x.sets.forEach(st => sidesOf(ex, st).forEach(sd => { maxW = Math.max(maxW, sd.w || 0); })));
+  return maxW > 0 ? (REPLIKE.test(ex.unit) ? 'e' : 'w') : 'r';
+}
+function setValue(ex, st, mode, N) {
+  const vals = sidesOf(ex, st).map(x => {
+    if (mode === 'e') { const eff = (x.r || 0) + (st.rir == null ? 0 : Math.min(st.rir, 4)); return x.w ? x.w * (1 + eff / 30) / (1 + N / 30) : 0; }
+    return mode === 'w' ? (x.w || 0) : (x.r || 0);
+  });
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+function exSeries(ex, N) {
+  const h = exHistory(ex), mode = exModeOf(ex, h);
+  const pts = h.map(x => ({ date: x.date, sets: x.sets, v: Math.max(...x.sets.map(st => setValue(ex, st, mode, N))) })).filter(p => p.v > 0);
+  return { mode, pts };
+}
+const fmtN = v => String(Math.round(v * 2) / 2);
+const shortDate = k => parseKey(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const unitOf = (ex, mode, N) => mode === 'e' ? `lb, your ${N}-rep weight` : mode === 'w' ? 'lb, top weight' : /^sec/.test(ex.unit) ? 'seconds' : /^m\b/.test(ex.unit) ? 'meters' : 'reps in your best set';
+
+function lineChart(pts) {
+  const W = 340, H = 196, L = 40, R = 16, T = 20, B = 28;
+  const vs = pts.map(p => p.v); let lo = Math.min(...vs), hi = Math.max(...vs);
+  if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
+  const pd = (hi - lo) * .18; lo = Math.max(0, lo - pd); hi += pd;
+  const t0 = parseKey(pts[0].date).getTime(), t1 = parseKey(pts[pts.length - 1].date).getTime();
+  const X = d => (pts.length === 1 || t1 === t0) ? L + (W - L - R) / 2 : L + (parseKey(d).getTime() - t0) / (t1 - t0) * (W - L - R);
+  const Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const grid = [lo, (lo + hi) / 2, hi].map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" style="stroke:var(--line)" stroke-width="1"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" font-size="11" style="fill:var(--ink3)">${fmtN(v)}</text>`).join('');
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + X(p.date).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+  const area = pts.length > 1 ? `<path d="${line} L${X(pts[pts.length - 1].date).toFixed(1)} ${H - B} L${X(pts[0].date).toFixed(1)} ${H - B} Z" fill="url(#cg)"/>` : '';
+  const dots = pts.map((p, i) => `<circle cx="${X(p.date).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${i === pts.length - 1 ? 5.5 : 3.6}" style="fill:${i === pts.length - 1 ? 'var(--accent)' : 'var(--surface)'};stroke:var(--accent)" stroke-width="2.4"/>`).join('');
+  const lp = pts[pts.length - 1];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Strength over time">
+    <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent)" stop-opacity=".22"/><stop offset="1" style="stop-color:var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    ${grid}${area}<path d="${line}" fill="none" style="stroke:var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${dots}
+    <text x="${Math.min(W - R, Math.max(L, X(lp.date))).toFixed(1)}" y="${(Y(lp.v) - 11).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--ink)">${fmtN(lp.v)}</text>
+    <text x="${L}" y="${H - 8}" font-size="11" style="fill:var(--ink3)">${esc(shortDate(pts[0].date))}</text>
+    ${pts.length > 1 ? `<text x="${W - R}" y="${H - 8}" text-anchor="end" font-size="11" style="fill:var(--ink3)">${esc(shortDate(lp.date))}</text>` : ''}</svg>`;
+}
+function spark(pts) {
+  if (pts.length < 2) return '';
+  const W = 64, H = 28, vs = pts.map(p => p.v), lo = Math.min(...vs), hi = Math.max(...vs), span = (hi - lo) || 1;
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + (2 + i / (pts.length - 1) * (W - 4)).toFixed(1) + ' ' + (H - 3 - (p.v - lo) / span * (H - 6)).toFixed(1)).join(' ');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" fill="none" style="stroke:var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function viewStrength() {
+  if (S.strEx) { const ex = findEx(S.strEx); if (ex) return viewStrengthDetail(ex); S.strEx = null; }
+  const N = S.strReps || 8;
+  const rows = allLifts().map(ex => { const sr = exSeries(ex, N); return { ex, sr, last: sr.pts.length ? sr.pts[sr.pts.length - 1].date : '' }; })
+    .filter(r => r.sr.pts.length).sort((a, b) => b.last.localeCompare(a.last));
+  const list = rows.length ? rows.map(({ ex, sr }) => {
+    const p = sr.pts, cur = p[p.length - 1].v, d = p.length > 1 ? cur - p[0].v : null;
+    const unit = sr.mode === 'r' ? (/^sec/.test(ex.unit) ? ' sec' : /^m\b/.test(ex.unit) ? ' m' : ' reps') : ' lb';
+    const delta = d == null ? 'First session logged' : d === 0 ? 'No change yet' : (d > 0 ? '+' : '') + fmtN(d) + unit.replace(' reps', '') + ' since start';
+    return `<button class="card daycard" data-act="strex" data-ex="${ex.id}"><span class="grow"><span class="h3" style="display:block">${esc(ex.name)}</span>
+      <span class="small muted">${esc(delta)}</span></span>${spark(p)}
+      <span class="rx tnum" style="min-width:56px">${fmtN(cur)}<small>${unit}</small></span></button>`;
+  }).join('') : `<div class="card empty"><p style="margin:0">Finish a workout and every lift you log shows up here with its progress over time.</p></div>`;
+  return `<section class="hello"><div class="eyebrow">Progress</div><h1 class="h-display h1">Strength</h1>
+    <p class="quote">Tap a lift to see how it has moved. Numbers show your ${N}-rep weight, so lifts done for different reps stay comparable.</p></section>
+    <div class="list">${list}</div><div class="syncnote" data-sync></div>`;
+}
+function viewStrengthDetail(ex) {
+  const N = S.strReps || 8, sr = exSeries(ex, N), p = sr.pts, mode = sr.mode;
+  const chips = mode === 'e' ? `<div class="seg" role="group" aria-label="Rep target">${[5, 8, 10].map(n => `<button data-act="strreps" data-n="${n}" aria-selected="${n === N}">${n} reps</button>`).join('')}</div>` : '';
+  const cap = mode === 'e' ? `Each point is your best set that day, turned into the weight you could lift for ${N} reps. Reps you left in the tank count.` :
+    mode === 'w' ? 'Each point is the heaviest weight you used that day.' : 'No added weight yet, so each point is your best set that day.';
+  const best = p.length ? Math.max(...p.map(x => x.v)) : 0, cur = p.length ? p[p.length - 1].v : 0, chg = p.length > 1 ? cur - p[0].v : 0;
+  const chart = p.length ? lineChart(p) : '<p class="muted small">Nothing logged for this move yet.</p>';
+  const stats = p.length ? `<div class="stat"><div><b class="tnum">${fmtN(cur)}</b><span>Latest</span></div><div><b class="tnum">${fmtN(best)}</b><span>Best</span></div><div><b class="tnum">${p.length > 1 ? (chg > 0 ? '+' : '') + fmtN(chg) : '—'}</b><span>Change</span></div></div>` : '';
+  const hist = exHistory(ex).slice().reverse().map(x => `<div class="card ex" style="gap:8px"><div class="row between"><span class="h3">${esc(shortDate(x.date))}</span><span class="small muted">${x.sets.length} set${x.sets.length === 1 ? '' : 's'}</span></div>
+    <div class="logline tnum">${esc(x.sets.map(st => setShort(ex, st) + (st.rir != null ? ' (' + st.rir + ')' : '')).join(', '))}</div>
+    ${x.sets.filter(st => st.note).map(st => `<div class="small muted">“${esc(st.note)}”</div>`).join('')}</div>`).join('');
+  return `<div class="row between" style="padding-top:14px"><button class="iconbtn" data-act="strback" aria-label="Back">${ICON_BACK}</button><span class="eyebrow">Strength</span></div>
+    <section class="hello" style="padding-top:2px"><h1 class="h-display h2">${esc(ex.name)}</h1></section>
+    <section class="card" style="display:flex;flex-direction:column;gap:12px">${chips}${chart}${stats}
+      <p class="small muted" style="margin:0">${esc(cap)} Chart unit: ${esc(unitOf(ex, mode, N))}.${isSided(ex) ? ' Left and right are averaged.' : ''}</p></section>
+    <div class="eyebrow" style="padding:4px 4px 0">Every session</div>${hist}`;
+}
 /* ---------- WORKOUT: steps, focus view, full view ---------- */
 const elapsed = s => (s.accSec || 0) + (s.resumeAt ? (Date.now() - s.resumeAt) / 1000 : 0);
 const entry = (s, id) => (s.entries[id] = s.entries[id] || {});
@@ -853,25 +1037,41 @@ const entry = (s, id) => (s.entries[id] = s.entries[id] || {});
 function stepsOf(sess) {
   const a = [];
   if (sess.warm.length) a.push({ id: 'warm', type: 'stack', key: 'warm', title: 'Warm-up', items: sess.warm, btn: 'Warm-up complete' });
-  sess.blocks.forEach(b => b.items.forEach(ex => a.push({ id: ex.id, type: 'ex', ex, block: b.title })));
+  sess.blocks.forEach(b => {
+    if (b.group) a.push({ id: 'grp:' + b.items.map(x => x.id).join('+'), type: 'group', exs: b.items, block: b.title });
+    else b.items.forEach(ex => a.push({ id: ex.id, type: 'ex', ex, block: b.title }));
+  });
   if (sess.cool.length) a.push({ id: 'cool', type: 'stack', key: 'cool', title: 'Cool-down', items: sess.cool, btn: 'Cool-down complete' });
   a.push({ id: 'wrap', type: 'wrap', title: 'Wrap up' });
   return a;
 }
-const stepName = st => st.type === 'ex' ? st.ex.name : st.title;
-function stepDone(s, st) {
-  if (st.type === 'stack') return !!s.checks[st.key];
-  if (st.type === 'wrap') return !!s.done;
-  const ex = st.ex, e = s.entries[ex.id] || {};
+const stepName = st => st.type === 'ex' ? st.ex.name : st.type === 'group' ? st.block + ': ' + st.exs.map(e => e.name).join(' + ') : st.title;
+const stepFor = (s, exId) => stepsOf(SESSIONS[s.key]).find(st => (st.type === 'ex' && st.ex.id === exId) || (st.type === 'group' && st.exs.some(e => e.id === exId)));
+function exDone(s, ex) {
+  const e = s.entries[ex.id] || {};
   if (ex.kind === 'lift') return (e.sets || []).filter(Boolean).length >= plannedSets(ex, s.week) + (e.extra || 0);
   if (ex.kind === 'cardio') return !!e.min;
   return ex.checks.every((_, i) => s.checks[ex.id + ':' + i]);
+}
+/* when the move you are on is finished by what you just did, go to the next one */
+function maybeAdvance(s, st, wasDone) {
+  if (!st || wasDone || S.editStep != null) return false;
+  const steps = stepsOf(SESSIONS[s.key]), idx = steps.findIndex(x => x.id === st.id);
+  if (idx === (s.step || 0) && stepDone(s, steps[idx])) { advance(s); return true; }
+  return false;
+}
+function stepDone(s, st) {
+  if (st.type === 'stack') return !!s.checks[st.key];
+  if (st.type === 'wrap') return !!s.done;
+  if (st.type === 'group') return st.exs.every(ex => exDone(s, ex));
+  return exDone(s, st.ex);
 }
 /* Move clocks: a move starts timing when you reach it. It keeps timing, wherever you go in the app,
    until all its sets are logged. Moves you leave untouched stop timing. Pausing stops every clock. */
 function stepProgress(s, st) {
   if (st.type === 'stack') return !!s.checks[st.key];
   if (st.type === 'wrap') return false;
+  if (st.type === 'group') return st.exs.some(ex => ((s.entries[ex.id] || {}).sets || []).some(Boolean));
   const ex = st.ex, e = s.entries[ex.id] || {};
   if (ex.kind === 'lift') return (e.sets || []).some(Boolean);
   if (ex.kind === 'cardio') return !!e.min;
@@ -925,52 +1125,86 @@ const repsLabel = (ex, r) => /^sec/.test(ex.unit) ? `${r} sec` : /^m\b/.test(ex.
 function suggestFor(s, ex, i) {
   const en = s.entries[ex.id] || { sets: [] }, rec = recommend(ex, s.week, s.id);
   const prev = en.sets.slice(0, i).filter(Boolean).pop();
-  return { w: prev ? prev.w || 0 : (rec ? rec.w : 0), r: prev ? prev.r : (rec ? rec.r : ex.reps) };
+  const w = prev ? prev.w || 0 : (rec ? rec.w : 0), r = prev ? prev.r : (rec ? rec.r : ex.reps);
+  return { w, r, w2: prev && prev.w2 != null ? prev.w2 : w, r2: prev && prev.r2 != null ? prev.r2 : r };
 }
 function getDraft(s, ex, i) {
   const cur = S.draft[ex.id]; if (cur && cur.i === i) return cur;
-  const en = s.entries[ex.id] || { sets: [] };
+  const en = s.entries[ex.id] || { sets: [] }, st = en.sets[i];
   let d;
-  if (en.sets[i]) d = { i, w: en.sets[i].w || 0, r: en.sets[i].r, rir: en.sets[i].rir, g: {} };
-  else { const g = suggestFor(s, ex, i); d = { i, w: g.w, r: g.r, rir: defaultRir(s.week), g: { w: true, r: true } }; }
+  if (st) {
+    d = { i, w: st.w || 0, r: st.r, rir: st.rir, note: st.note || '', g: {} };
+    if (isSided(ex)) { d.w2 = st.w2 != null ? st.w2 : d.w; d.r2 = st.r2 != null ? st.r2 : d.r; }
+  } else {
+    const g = suggestFor(s, ex, i);
+    d = { i, w: g.w, r: g.r, rir: defaultRir(s.week), note: '', g: { w: true, r: true } };
+    if (isSided(ex)) { d.w2 = g.w2; d.r2 = g.r2; d.g.w2 = true; d.g.r2 = true; }
+  }
   S.draft[ex.id] = d; return d;
 }
 const stepper = (ex, f, label, val, step, gray) => `<div class="stp"><div class="lab">${label}</div><div class="ctl">
   <button class="rbtn" data-act="step" data-ex="${ex}" data-f="${f}" data-d="${-step}" aria-label="Decrease ${label}">−</button>
-  <input class="val tnum ${gray ? 'rec' : ''}" type="text" inputmode="${f === 'r' || f === 'min' ? 'numeric' : 'decimal'}" pattern="[0-9]*[.]?[0-9]*" enterkeyhint="done" autocomplete="off" data-ex="${ex}" data-f="${f}" value="${esc(val)}" aria-label="${label}">
+  <input class="val tnum ${gray ? 'rec' : ''}" type="text" inputmode="${f[0] === 'r' || f === 'min' ? 'numeric' : 'decimal'}" pattern="[0-9]*[.]?[0-9]*" enterkeyhint="done" autocomplete="off" data-ex="${ex}" data-f="${f}" value="${esc(val)}" aria-label="${label}">
   <button class="rbtn" data-act="step" data-ex="${ex}" data-f="${f}" data-d="${step}" aria-label="Increase ${label}">+</button></div></div>`;
 const wShow = (ex, w) => (ex.load === 'bw' && !w) ? 'BW' : w;
 const demoLink = ex => ex.kind === 'lift' ? `<a class="seeit" href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' exercise form')}" target="_blank" rel="noopener">Watch a demo ↗</a>` : '';
 const howBlock = ex => ex.how ? `<details class="how"><summary>How to do it</summary><p>${esc(ex.how)}</p>${demoLink(ex)}</details>` : '';
+const nSetsOf = (s, ex) => plannedSets(ex, s.week) + ((s.entries[ex.id] || {}).extra || 0);
+
+/* text for one logged set, with left/right when the move is per side */
+function setText(ex, st) {
+  const hasW = showW(ex), wt = w => hasW ? (w ? ' · ' + w + ' lb' : ' · BW') : '';
+  if (isSided(ex) && st.r2 != null) {
+    if ((st.w || 0) === (st.w2 || 0)) return `L ${st.r} · R ${st.r2}${wt(st.w)}`;
+    return `L ${st.r}${wt(st.w)} · R ${st.r2}${wt(st.w2)}`;
+  }
+  return `${repsLabel(ex, st.r)}${wt(st.w)}`;
+}
+function planText(ex, g) {
+  const hasW = showW(ex), wt = w => hasW ? (w ? ' · ' + w + ' lb' : ' · BW') : '';
+  if (isSided(ex)) return `L ${g.r} · R ${g.r2}${wt(g.w)}`;
+  return `${repsLabel(ex, g.r)}${wt(g.w)}`;
+}
+const doneRowHTML = (s, ex, i, tag, st) => `<button class="setdone" data-act="edit" data-ex="${ex.id}" data-i="${i}"><span class="n">${tag}</span>
+  <span class="tnum">${esc(setText(ex, st))}</span><span class="rirtag">${st.rir === 4 ? '4+' : st.rir} left</span><span class="tick">${ICON_CHECK}</span>${st.note ? `<span class="snote">“${esc(st.note)}”</span>` : ''}</button>`;
+const waitRowHTML = (s, ex, i, tag) => `<button class="setwait" data-act="edit" data-ex="${ex.id}" data-i="${i}"><span class="n">${tag}</span><span class="tnum">${esc(planText(ex, suggestFor(s, ex, i)))}</span></button>`;
+
+/* the open set card: weight and reps (left and right for per-side moves), reps left, a note, and the log button */
+function activeSetHTML(s, ex, i, o) {
+  const en = s.entries[ex.id] || { sets: [] }, st = en.sets[i], hasW = showW(ex), d = getDraft(s, ex, i), sided = isSided(ex);
+  const isExtra = i >= plannedSets(ex, s.week);
+  const wLab = ex.load === 'bw' ? 'Added lb' : 'Weight lb', rLab = /^sec/.test(ex.unit) ? 'Seconds' : /^m\b/.test(ex.unit) ? 'Meters' : 'Reps';
+  const pair = (suf) => `<div class="steppers" style="${hasW ? '' : 'grid-template-columns:1fr'}">
+      ${hasW ? stepper(ex.id, 'w' + suf, wLab, wShow(ex, d['w' + suf]), ex.step, d.g && d.g['w' + suf]) : ''}
+      ${stepper(ex.id, 'r' + suf, rLab, d['r' + suf], repStep(ex), d.g && d.g['r' + suf])}</div>`;
+  const inputs = sided ? `<div class="sidelab">Left side</div>${pair('')}<div class="sidelab">Right side</div>${pair('2')}` : pair('');
+  return `<div class="setact"><div class="row between"><span class="eyebrow">${o.eyebrow}</span>
+    ${o.editing ? `<button class="btn quiet" data-act="closeedit" data-ex="${ex.id}" style="min-height:32px;padding:0 4px">Close</button>` : ''}</div>
+    ${inputs}
+    <div class="rir"><div class="lab">Reps left in the tank</div><div class="chips">${[0, 1, 2, 3, 4].map(v => `<button class="chip" data-act="rir" data-ex="${ex.id}" data-v="${v}" aria-pressed="${d.rir === v}">${v === 4 ? '4+' : v}</button>`).join('')}</div></div>
+    <input class="noteinput" data-ex="${ex.id}" data-f="note" placeholder="Add a note (optional)" value="${esc(d.note || '')}" aria-label="Note for this set" autocomplete="off">
+    <button class="btn primary" data-act="log" data-ex="${ex.id}">${st ? 'Update ' + o.tag : 'Log ' + o.tag + (o.finishes ? ' · complete' : '')}</button>
+    ${isExtra ? `<button class="btn quiet" data-act="delset" data-ex="${ex.id}" data-i="${i}">Delete this extra set</button>` : ''}</div>`;
+}
+function lastLines(s, ex) {
+  const rec = recommend(ex, s.week, s.id), hasW = showW(ex), last = lastFor(ex.id, s.id), lt = lastText(ex, last);
+  const sug = rec ? (last ? rec.why + (hasW && rec.w ? ` · suggested ${rec.w} lb` : '') : (hasW && rec.w ? `Starting guess: ${rec.w} lb` : '')) : '';
+  return { lt, sug };
+}
 
 function cardLift(s, ex) {
   const en = s.entries[ex.id] || { sets: [] };
-  const n = plannedSets(ex, s.week) + (en.extra || 0), logged = en.sets.filter(Boolean).length;
+  const n = nSetsOf(s, ex), logged = en.sets.filter(Boolean).length;
   let firstEmpty = -1; for (let i = 0; i < n; i++) if (!en.sets[i]) { firstEmpty = i; break; }
   const editingHere = !!(S.editing && S.editing.ex === ex.id);
   const act = editingHere ? S.editing.i : firstEmpty;
-  const rec = recommend(ex, s.week, s.id), hasW = showW(ex), last = lastFor(ex.id, s.id), lt = lastText(ex, last);
-  const sug = rec ? (last ? rec.why + (hasW && rec.w ? ` · suggested ${rec.w} lb` : '') : (hasW && rec.w ? `Starting guess: ${rec.w} lb` : '')) : '';
+  const { lt, sug } = lastLines(s, ex);
   let rows = '';
   for (let i = 0; i < n; i++) {
     const st = en.sets[i];
-    if (i === act) {
-      const d = getDraft(s, ex, i), lastNew = !st && logged === n - 1;
-      rows += `<div class="setact"><div class="row between"><span class="eyebrow">Set ${i + 1} of ${n}${ex.unit !== 'reps' ? ' · ' + esc(ex.unit) : ''}</span>
-        ${editingHere ? `<button class="btn quiet" data-act="closeedit" data-ex="${ex.id}" style="min-height:32px;padding:0 4px">Close</button>` : ''}</div>
-        <div class="steppers" style="${hasW ? '' : 'grid-template-columns:1fr'}">
-          ${hasW ? stepper(ex.id, 'w', ex.load === 'bw' ? 'Added lb' : 'Weight lb', wShow(ex, d.w), ex.step, d.g && d.g.w) : ''}
-          ${stepper(ex.id, 'r', /^sec/.test(ex.unit) ? 'Seconds' : /^m\b/.test(ex.unit) ? 'Meters' : 'Reps', d.r, repStep(ex), d.g && d.g.r)}
-        </div>
-        <div class="rir"><div class="lab">Reps left in the tank</div><div class="chips">${[0, 1, 2, 3, 4].map(v => `<button class="chip" data-act="rir" data-ex="${ex.id}" data-v="${v}" aria-pressed="${d.rir === v}">${v === 4 ? '4+' : v}</button>`).join('')}</div></div>
-        <button class="btn primary" data-act="log" data-ex="${ex.id}">${st ? 'Update set ' + (i + 1) : 'Log set ' + (i + 1) + (lastNew ? ' · complete exercise' : '')}</button></div>`;
-    } else if (st) {
-      rows += `<button class="setdone" data-act="edit" data-ex="${ex.id}" data-i="${i}"><span class="n">${i + 1}</span>
-        <span class="tnum">${repsLabel(ex, st.r)}${hasW && st.w ? ' · ' + st.w + ' lb' : ''}</span><span class="rirtag">${st.rir === 4 ? '4+' : st.rir} left</span><span class="tick">${ICON_CHECK}</span></button>`;
-    } else {
-      const g = suggestFor(s, ex, i);
-      rows += `<button class="setwait" data-act="edit" data-ex="${ex.id}" data-i="${i}"><span class="n">${i + 1}</span><span class="tnum">${repsLabel(ex, g.r)}${hasW && g.w ? ' · ' + g.w + ' lb' : hasW ? ' · BW' : ''}</span></button>`;
-    }
+    if (i === act) rows += activeSetHTML(s, ex, i, { editing: editingHere, tag: 'set ' + (i + 1), eyebrow: `Set ${i + 1} of ${n}${ex.unit !== 'reps' ? ' · ' + esc(ex.unit) : ''}`, finishes: !st && logged === n - 1 });
+    else if (st) rows += doneRowHTML(s, ex, i, i + 1, st);
+    else rows += waitRowHTML(s, ex, i, i + 1);
   }
   const complete = logged >= n && act === -1;
   return `<article class="card ex"><div class="ex-head"><h3 class="h3">${esc(ex.name)}</h3><span class="rx tnum">${plannedSets(ex, s.week)} × ${ex.reps}<small> ${ex.unit === 'reps' ? '' : esc(ex.unit)}</small></span></div>
@@ -978,6 +1212,38 @@ function cardLift(s, ex) {
     ${lt ? `<div class="last">${lt}${sug ? '<br>' + esc(sug) : ''}</div>` : sug ? `<div class="last">${esc(sug)}</div>` : ''}
     <div class="sets">${rows}</div>
     ${complete ? `<div class="donebanner">${ICON_CHECK}<span>Exercise complete</span></div><button class="btn quiet" data-act="addset" data-ex="${ex.id}">+ Add a set</button>` : ''}</article>`;
+}
+
+/* superset: every set of every move in the order you do them (A, B, A, B...) on one card */
+const LET = 'ABCDEF';
+function groupOrder(s, exs) {
+  const ns = exs.map(ex => nSetsOf(s, ex)), out = [];
+  for (let r = 0; r < Math.max(...ns); r++) exs.forEach((ex, k) => { if (r < ns[k]) out.push({ ex, k, i: r, r }); });
+  return out;
+}
+const groupSet = (s, x) => ((s.entries[x.ex.id] || {}).sets || [])[x.i];
+function cardGroup(s, st) {
+  const exs = st.exs, order = groupOrder(s, exs);
+  const editingHere = !!(S.editing && exs.some(e => e.id === S.editing.ex));
+  const act = editingHere ? order.find(x => x.ex.id === S.editing.ex && x.i === S.editing.i) : order.find(x => !groupSet(s, x));
+  const loggedN = order.filter(x => groupSet(s, x)).length;
+  let rows = '', lastR = -1;
+  order.forEach(x => {
+    if (x.r !== lastR) { lastR = x.r; rows += `<div class="rnd">Round ${x.r + 1}</div>`; }
+    const tag = LET[x.k] + (x.r + 1), stt = groupSet(s, x);
+    if (x === act) rows += activeSetHTML(s, x.ex, x.i, { editing: editingHere, tag: tag, eyebrow: `${tag} · ${esc(x.ex.name)} · Set ${x.i + 1} of ${nSetsOf(s, x.ex)}`, finishes: !stt && loggedN === order.length - 1 });
+    else if (stt) rows += doneRowHTML(s, x.ex, x.i, tag, stt);
+    else rows += waitRowHTML(s, x.ex, x.i, tag);
+  });
+  const legend = exs.map((e, k) => `<div class="lg"><b>${LET[k]}</b><span class="grow">${esc(e.name)}</span><span class="tnum muted">${plannedSets(e, s.week)} × ${e.reps}${e.unit === 'reps' ? '' : ' ' + esc(e.unit)}</span></div>`).join('');
+  const lasts = exs.map((e, k) => { const { lt, sug } = lastLines(s, e); return lt ? `<div><b>${LET[k]}</b> ${lt.replace('<b>Last:</b>', 'Last:')}${sug ? ' · ' + esc(sug) : ''}</div>` : sug ? `<div><b>${LET[k]}</b> ${esc(sug)}</div>` : ''; }).join('');
+  const hows = exs.map((e, k) => e.how ? `<details class="how"><summary>${LET[k]} · How to do it</summary><p>${esc(e.how)}</p>${demoLink(e)}</details>` : '').join('');
+  const complete = loggedN >= order.length && !act;
+  return `<article class="card ex"><div class="ex-head"><h3 class="h3">${esc(st.block)}</h3><span class="small muted">${exs.map((e, k) => LET[k]).join(' then ')}, repeat</span></div>
+    <div class="legend">${legend}</div>${hows}
+    ${lasts ? `<div class="last">${lasts}</div>` : ''}
+    <div class="sets">${rows}</div>
+    ${complete ? `<div class="donebanner">${ICON_CHECK}<span>Superset complete</span></div><div class="row" style="gap:8px;flex-wrap:wrap">${exs.map((e, k) => `<button class="btn quiet grow" data-act="addset" data-ex="${e.id}">+ Set for ${LET[k]}</button>`).join('')}</div>` : ''}</article>`;
 }
 
 function cardCardio(s, ex) {
@@ -1033,8 +1299,8 @@ function viewFocus(s) {
   let top;
   if (editing) top = `<div class="row between"><span class="eyebrow">Editing</span><button class="btn ghost sm" data-act="backtoworkout">Back to workout</button></div>`;
   else if (st.type === 'wrap') top = `<div class="eyebrow">Last step</div>`;
-  else top = `<div class="row between"><span class="eyebrow">Move ${idx + 1} of ${last} · ${esc(st.type === 'ex' ? st.block : st.title)}</span>${timeHtml}</div>`;
-  const body = st.type === 'stack' ? cardStack(s, st) : st.type === 'wrap' ? cardWrap(s) :
+  else top = `<div class="row between"><span class="eyebrow">Move ${idx + 1} of ${last} · ${esc(st.type === 'ex' || st.type === 'group' ? st.block : st.title)}</span>${timeHtml}</div>`;
+  const body = st.type === 'stack' ? cardStack(s, st) : st.type === 'wrap' ? cardWrap(s) : st.type === 'group' ? cardGroup(s, st) :
     st.ex.kind === 'lift' ? cardLift(s, st.ex) : st.ex.kind === 'cardio' ? cardCardio(s, st.ex) : cardCheck(s, st.ex);
   const nav = editing ? '' : `<div class="navrow"><button class="btn ghost sm prev" data-act="prev" ${idx === 0 ? 'disabled' : ''}>‹ Prev</button>${st.type === 'wrap' ? '' : `<button class="btn ${doneNow ? 'primary' : 'ghost'} sm" data-act="next">Next ›</button>`}</div>`;
   return `${top}${editing && timeHtml ? `<div style="text-align:right">${timeHtml}</div>` : ''}${body}${nav}`;
@@ -1042,13 +1308,22 @@ function viewFocus(s) {
 
 /* ---------- full view: read-only overview, Edit to change ---------- */
 function fullSets(s, ex) {
-  const en = s.entries[ex.id] || { sets: [] }, n = plannedSets(ex, s.week) + (en.extra || 0), hasW = showW(ex);
+  const en = s.entries[ex.id] || { sets: [] }, n = nSetsOf(s, ex);
   let out = '';
   for (let i = 0; i < n; i++) {
     const st = en.sets[i];
-    if (st) out += `<li class="logged"><span>Set ${i + 1}</span><span class="tnum">${repsLabel(ex, st.r)}${hasW ? ' · ' + (st.w ? st.w + ' lb' : 'BW') : ''} <i>${st.rir === 4 ? '4+' : st.rir} left</i></span></li>`;
-    else { const g = suggestFor(s, ex, i); out += `<li class="plan"><span>Set ${i + 1}</span><span class="tnum">${repsLabel(ex, g.r)}${hasW ? ' · ' + (g.w ? g.w + ' lb' : 'BW') : ''}</span></li>`; }
+    if (st) out += `<li class="logged"><span>Set ${i + 1}</span><span class="tnum">${esc(setText(ex, st))} <i>${st.rir === 4 ? '4+' : st.rir} left</i></span></li>${st.note ? `<li class="nt"><span>“${esc(st.note)}”</span></li>` : ''}`;
+    else out += `<li class="plan"><span>Set ${i + 1}</span><span class="tnum">${esc(planText(ex, suggestFor(s, ex, i)))}</span></li>`;
   }
+  return `<ul class="sets-list">${out}</ul>`;
+}
+function fullGroupSets(s, st) {
+  let out = '';
+  groupOrder(s, st.exs).forEach(x => {
+    const tag = LET[x.k] + (x.r + 1), stt = groupSet(s, x);
+    if (stt) out += `<li class="logged"><span>${tag} · ${esc(x.ex.name)}</span><span class="tnum">${esc(setText(x.ex, stt))} <i>${stt.rir === 4 ? '4+' : stt.rir} left</i></span></li>${stt.note ? `<li class="nt"><span>“${esc(stt.note)}”</span></li>` : ''}`;
+    else out += `<li class="plan"><span>${tag} · ${esc(x.ex.name)}</span><span class="tnum">${esc(planText(x.ex, suggestFor(s, x.ex, x.i)))}</span></li>`;
+  });
   return `<ul class="sets-list">${out}</ul>`;
 }
 function viewFull(s) {
@@ -1056,7 +1331,8 @@ function viewFull(s) {
   const rows = steps.filter(st => st.type !== 'wrap').map((st, idx) => {
     const done = stepDone(s, st), isNow = idx === cur, t = stepTime(s, st.id);
     let rx = '', body = '';
-    if (st.type === 'stack') { rx = st.items.length + ' moves'; body = `<ul class="stack compact">${st.items.map(it => `<li><div class="top"><span>${esc(it[0])}</span><span class="tnum">${esc(it[1])}</span></div></li>`).join('')}</ul>`; }
+    if (st.type === 'group') { rx = st.exs.map((e, k) => LET[k]).join(' + '); body = fullGroupSets(s, st); }
+    else if (st.type === 'stack') { rx = st.items.length + ' moves'; body = `<ul class="stack compact">${st.items.map(it => `<li><div class="top"><span>${esc(it[0])}</span><span class="tnum">${esc(it[1])}</span></div></li>`).join('')}</ul>`; }
     else {
       const ex = st.ex, e = s.entries[ex.id] || {};
       if (ex.kind === 'lift') { rx = `${plannedSets(ex, s.week)} × ${ex.reps}${ex.unit !== 'reps' ? ' ' + ex.unit : ''}`; body = fullSets(s, ex); }
@@ -1089,7 +1365,7 @@ function summarySheet() {
   const s = S.sessions[S.activeId]; if (!s) return '';
   let sets = 0, vol = 0;
   Object.values(s.entries).forEach(e => (e.sets || []).forEach(x => { if (!x) return; sets++; vol += (x.w || 0) * (x.r || 0); }));
-  const moves = stepsOf(SESSIONS[s.key]).filter(x => x.type === 'ex').map(x => x.ex);
+  const moves = stepsOf(SESSIONS[s.key]).flatMap(x => x.type === 'ex' ? [x.ex] : x.type === 'group' ? x.exs : []);
   const loved = s.loved || [], meh = s.meh || [];
   const rate = Array.from({ length: 11 }, (_, v) => `<button class="rn" data-act="rate" data-v="${v}" aria-pressed="${s.rating === v}">${v}</button>`).join('');
   const drop = (which, label, list) => `<details class="drop" ${S.rateOpen === which ? 'open' : ''}><summary data-ro="${which}"><span>${label}</span><span class="cnt">${list.length || ''}</span></summary>
@@ -1098,9 +1374,19 @@ function summarySheet() {
     <div class="eyebrow">Nice work</div><h2 class="h-display h2 acc">${esc(s.name)} done</h2>
     <div class="stat"><div><b class="tnum">${fmtDur(s.durationSec || 0)}</b><span>Time</span></div><div><b>${sets}</b><span>Sets</span></div><div><b class="tnum">${vol ? Math.round(vol).toLocaleString() : '—'}</b><span>Lb moved</span></div></div>
     <div class="row" style="justify-content:center">${streakBadge()}</div>
+    ${scaleBlock(s)}
     <div class="rateblock"><div class="row between"><span class="eyebrow">Rate this workout</span><span class="small muted tnum">${s.rating != null ? s.rating + ' / 10' : 'optional'}</span></div><div class="rate" role="group" aria-label="Rating 0 to 10">${rate}</div></div>
     ${drop('loved', 'Moves I loved', loved)}${drop('meh', 'Not a fan', meh)}
     <button class="btn primary" data-act="closesummary">Done</button></div></div>`;
+}
+
+/* after the workout: how hard it was (lifting, running) or how recovered you feel (yin, walking) */
+function scaleBlock(s) {
+  const recov = SESSIONS[s.key] && SESSIONS[s.key].scale === 'recov', key = recov ? 'recov' : 'effort', val = s[key], labels = recov ? RECOV : EFFORT;
+  const btns = labels.map((_, v) => `<button class="rn" data-act="${key}" data-v="${v}" aria-pressed="${val === v}">${v}</button>`).join('');
+  return `<div class="rateblock"><div class="row between"><span class="eyebrow">${recov ? 'How recovered do you feel?' : 'How hard was it?'}</span><span class="small muted tnum">${val != null ? val + ' / 10' : 'optional'}</span></div>
+    <div class="rate" role="group" aria-label="${recov ? 'Recovery' : 'Effort'} 0 to 10">${btns}</div>
+    <div class="small scalenote">${val != null ? `<b>${esc(labels[val])}</b>` : recov ? '0 is wrecked, 5 is okay, 10 is fully recharged.' : '0 felt like no workout, 5 is just right, 10 is gassed and couldn\'t finish.'}</div></div>`;
 }
 /* ---------- RENDER + EVENTS + BOOT ---------- */
 let tick = null, wl = null;
@@ -1131,15 +1417,16 @@ function render() {
   if (S.activeId && S.sessions[S.activeId]) { html = viewWorkout(); bar.hidden = true; startTick(); }
   else {
     S.activeId = null; stopTick(); bar.hidden = false;
-    html = S.preview ? viewPreview(S.preview) : S.tab === 'week' ? viewWeek() : S.tab === 'history' ? viewHistory() : viewToday();
+    html = S.preview ? viewPreview(S.preview) : S.tab === 'week' ? viewWeek() : S.tab === 'history' ? viewHistory() : S.tab === 'strength' ? viewStrength() : viewToday();
     document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === S.tab)));
   }
   if (S.sheet === 'swap') html += swapSheet();
   if (S.sheet === 'summary') html += summarySheet();
   app.innerHTML = html; paintSync();
-  const tabs = $('.tabs'); if (tabs) tabs.dataset.i = String(Math.max(0, ['today', 'week', 'history'].indexOf(S.tab)));
+  const tabs = $('.tabs'); if (tabs) tabs.dataset.i = String(Math.max(0, ['today', 'week', 'history', 'strength'].indexOf(S.tab)));
   const ns = $('.sheet'); if (ns && sheetY) ns.scrollTop = sheetY;
   window.scrollTo(0, y);
+  if (S.scrollCur) { S.scrollCur = false; const n = document.querySelector('.fullrow.now'); if (n && n.scrollIntoView) n.scrollIntoView({ block: 'start' }); }
 }
 function startTick() {
   stopTick();
@@ -1158,7 +1445,7 @@ function startWorkout(forceKey) {
   const key = forceKey || today, sess = SESSIONS[key], id = sessionId(dateKey(p.today), key);
   let s = S.sessions[id];
   if (s && !s.done && !hasContent(s)) s = null; // an empty, unfinished session starts fresh
-  if (!s) s = { id, date: dateKey(p.today), key, name: sess.name, week: p.week, startedAt: Date.now(), accSec: 0, resumeAt: null, done: false, entries: {}, checks: {}, step: 0, times: {}, open: {}, since: null, ep: EPOCH };
+  if (!s) s = { id, date: dateKey(p.today), key, name: sess.name, week: p.week, startedAt: Date.now(), accSec: 0, resumeAt: null, done: false, entries: {}, checks: {}, step: 0, times: {}, open: {}, since: null, ep: EPOCH, v: SCHEMA };
   if (s.resumeAt && Date.now() - (s.updatedAt || 0) > 20 * 60000) { s.accSec = (s.accSec || 0) + Math.max(0, (s.updatedAt - s.resumeAt) / 1000); s.resumeAt = null; s.since = null; }
   s.times = s.times || {}; s.step = s.step || 0;
   s.done = false; s.resumeAt = s.resumeAt || Date.now();
@@ -1168,7 +1455,16 @@ function startWorkout(forceKey) {
 function pauseSession(s) { bank(s); if (s.resumeAt) { s.accSec = (s.accSec || 0) + (Date.now() - s.resumeAt) / 1000; s.resumeAt = null; } }
 const fieldEl = (ex, f) => document.querySelector(`input[data-ex="${ex}"][data-f="${f}"]`);
 const num = v => { const n = parseFloat(String(v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
-function findEx(id) { for (const k of ORDER) for (const b of SESSIONS[k].blocks) for (const ex of b.items) if (ex.id === id) return ex; return null; }
+function showField(ex, f, d) {
+  const inp = fieldEl(ex, f), exd = findEx(ex);
+  if (inp) { inp.value = (f[0] === 'w' && exd && exd.load === 'bw' && !d[f]) ? 'BW' : d[f]; inp.classList.remove('rec'); }
+}
+/* per-side moves: the right side follows the left until you change it yourself */
+function mirrorSide(ex, d, f) {
+  if (f !== 'w' && f !== 'r') return; const exd = findEx(ex); if (!exd || !isSided(exd)) return;
+  const f2 = f + '2'; if (d.g && d.g[f2]) { d[f2] = d[f]; showField(ex, f2, d); d.g[f2] = true; const i2 = fieldEl(ex, f2); if (i2) i2.classList.add('rec'); }
+}
+function findEx(id) { for (const k of ORDER) for (const b of SESSIONS[k].blocks) for (const ex of b.items) if (ex.id === id) return ex; return LEGACY_EX.find(e => e.id === id) || null; }
 function advance(s) { const n = stepsOf(SESSIONS[s.key]).length; moveTo(s, Math.min(n - 1, (s.step || 0) + 1)); }
 
 document.addEventListener('click', e => {
@@ -1192,7 +1488,7 @@ document.addEventListener('click', e => {
     case 'delcancel': S.delAsk = null; render(); return;
     case 'delconfirm': deleteSession(el.dataset.id); S.delAsk = null; render(); toast('Workout deleted'); return;
     case 'back': if (s) { pauseSession(s); save(s); } S.activeId = null; unlockScreen(); render(); return;
-    case 'mode': S.mode = el.dataset.m; S.editStep = null; S.editing = null; render(); top0(); return;
+    case 'mode': S.mode = el.dataset.m; S.editStep = null; S.editing = null; S.scrollCur = S.mode === 'full'; render(); if (S.mode !== 'full') top0(); return;
     case 'goto': {
       if (!s) return; const i = parseInt(el.dataset.i, 10), how = el.dataset.how;
       if (how === 'edit') S.editStep = i; else { S.editStep = null; if (how === 'go') { moveTo(s, i); save(s); } }
@@ -1201,14 +1497,13 @@ document.addEventListener('click', e => {
     case 'backtoworkout': S.editStep = null; S.editing = null; render(); top0(); return;
     case 'prev': if (s) { moveTo(s, Math.max(0, (s.step || 0) - 1)); save(s); S.editing = null; render(); top0(); } return;
     case 'next': if (s) { advance(s); save(s); S.editing = null; render(); top0(); } return;
-    case 'donestack': if (s) { s.checks[el.dataset.k] = true; settle(s); save(s); render(); } return;
-    case 'donecheck': if (s) { const st = stepsOf(SESSIONS[s.key])[s.step || 0]; if (st && st.type === 'ex') st.ex.checks.forEach((_, i) => { s.checks[st.ex.id + ':' + i] = true; }); settle(s); save(s); render(); } return;
+    case 'donestack': if (s) { const st0 = stepFor(s, el.dataset.k) || stepsOf(SESSIONS[s.key]).find(x => x.id === el.dataset.k), was = stepDone(s, st0); s.checks[el.dataset.k] = true; settle(s); const mv = maybeAdvance(s, st0, was); save(s); render(); if (mv) top0(); } return;
+    case 'donecheck': if (s) { const st = stepsOf(SESSIONS[s.key])[s.step || 0], was = st ? stepDone(s, st) : true; if (st && st.type === 'ex') st.ex.checks.forEach((_, i) => { s.checks[st.ex.id + ':' + i] = true; }); settle(s); const mv = maybeAdvance(s, st, was); save(s); render(); if (mv) top0(); } return;
     case 'toggle': if (s) { s.checks[el.dataset.k] = !s.checks[el.dataset.k]; save(s); render(); } return;
     case 'step': {
       const d = S.draft[ex]; if (!d) return; const f = el.dataset.f, inc = parseFloat(el.dataset.d);
       d[f] = Math.max(0, Math.round(((d[f] || 0) + inc) * 100) / 100); if (d.g) d.g[f] = false;
-      const inp = fieldEl(ex, f), exd = findEx(ex);
-      if (inp) { inp.value = (f === 'w' && exd && exd.load === 'bw' && !d.w) ? 'BW' : d[f]; inp.classList.remove('rec'); }
+      showField(ex, f, d); mirrorSide(ex, d, f);
       return;
     }
     case 'rir': {
@@ -1216,18 +1511,27 @@ document.addEventListener('click', e => {
       el.parentElement.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === el))); return;
     }
     case 'log': {
-      const d = S.draft[ex]; if (!s || !d) return; const en = entry(s, ex); en.sets = en.sets || [];
-      en.sets[d.i] = { w: d.w || 0, r: d.r || 0, rir: d.rir, t: Date.now() };
-      S.editing = null; delete S.draft[ex]; settle(s); save(s); render(); return;
+      const d = S.draft[ex]; if (!s || !d) return; const exo = findEx(ex), st0 = stepFor(s, ex), was = st0 ? stepDone(s, st0) : true, en = entry(s, ex); en.sets = en.sets || [];
+      const rec = { w: d.w || 0, r: d.r || 0, rir: d.rir, t: Date.now() };
+      if (isSided(exo)) { rec.w2 = d.w2 || 0; rec.r2 = d.r2 || 0; }
+      const note = (d.note || '').trim(); if (note) rec.note = note;
+      en.sets[d.i] = rec;
+      S.editing = null; delete S.draft[ex]; settle(s); const mv = maybeAdvance(s, st0, was); save(s); render(); if (mv) top0(); return;
     }
+    case 'delset': if (s) {
+      const en = entry(s, ex), i = parseInt(el.dataset.i, 10); en.sets = en.sets || [];
+      if (i < en.sets.length) en.sets.splice(i, 1);
+      en.extra = Math.max(0, (en.extra || 0) - 1); S.editing = null; delete S.draft[ex]; settle(s); save(s); render(); toast('Extra set removed');
+    } return;
     case 'edit': S.editing = { ex, i: parseInt(el.dataset.i, 10) }; delete S.draft[ex]; render(); return;
     case 'closeedit': S.editing = null; delete S.draft[ex]; render(); return;
-    case 'addset': if (s) { const en = entry(s, ex); en.extra = (en.extra || 0) + 1; en.sets = en.sets || []; bank(s); (s.open = s.open || {})[ex] = true; runClock(s); save(s); render(); } return;
+    case 'addset': if (s) { const en = entry(s, ex), stx = stepFor(s, ex); en.extra = (en.extra || 0) + 1; en.sets = en.sets || []; bank(s); (s.open = s.open || {})[stx ? stx.id : ex] = true; runClock(s); S.editing = null; save(s); render(); } return;
     case 'ecardio': S.editing = { ex, i: 'c' }; delete S.draft[ex]; render(); return;
     case 'logcardio': {
       const d = S.draft[ex]; if (!s || !d) return;
+      const st0 = stepFor(s, ex), was = st0 ? stepDone(s, st0) : true;
       s.entries[ex] = { min: d.min || 0, dist: d.dist || 0, note: (d.note || '').trim() };
-      S.editing = null; delete S.draft[ex]; settle(s); save(s); render(); return;
+      S.editing = null; delete S.draft[ex]; settle(s); const mv = maybeAdvance(s, st0, was); save(s); render(); if (mv) top0(); return;
     }
     case 'finish': {
       if (!s) return; S.editStep = null; pauseSession(s); s.done = true; s.durationSec = Math.round(s.accSec || 0); save(s);
@@ -1238,6 +1542,12 @@ document.addEventListener('click', e => {
       S.histMonth = { y: d.getFullYear(), m: d.getMonth() }; S.histDay = null; S.delAsk = null; render(); return;
     }
     case 'calday': S.histDay = S.histDay === el.dataset.date ? null : el.dataset.date; S.delAsk = null; render(); return;
+    case 'effort': if (s) { const v = parseInt(el.dataset.v, 10); s.effort = s.effort === v ? null : v; save(s); render(); } return;
+    case 'recov': if (s) { const v = parseInt(el.dataset.v, 10); s.recov = s.recov === v ? null : v; save(s); render(); } return;
+    case 'strex': S.strEx = ex; render(); top0(); return;
+    case 'strback': S.strEx = null; render(); top0(); return;
+    case 'strreps': S.strReps = parseInt(el.dataset.n, 10); render(); return;
+    case 'export': exportBackup(); return;
     case 'rate': if (s) { const v = parseInt(el.dataset.v, 10); s.rating = s.rating === v ? null : v; save(s); render(); } return;
     case 'mark': if (s) {
       const w = el.dataset.w, o = w === 'loved' ? 'meh' : 'loved', id = el.dataset.id;
@@ -1245,7 +1555,6 @@ document.addEventListener('click', e => {
       s[w] = (s[w] || []).includes(id) ? s[w].filter(x => x !== id) : (s[w] || []).concat(id);
       save(s); render();
     } return;
-    case 'export': exportBackup(); return;
     case 'closesummary': S.sheet = null; S.activeId = null; S.tab = 'today'; top0(); render(); return;
   }
 });
@@ -1255,6 +1564,7 @@ document.addEventListener('input', e => {
   const d = S.draft[t.dataset.ex]; if (!d) return;
   d[t.dataset.f] = t.dataset.f === 'note' ? t.value : num(t.value);
   if (d.g) d.g[t.dataset.f] = false; t.classList.remove('rec');
+  mirrorSide(t.dataset.ex, d, t.dataset.f);
 });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('val')) e.target.blur(); });
 document.addEventListener('focusin', e => { if (e.target.classList && e.target.classList.contains('val')) setTimeout(() => { try { e.target.select(); } catch (x) {} }, 0); });
@@ -1265,22 +1575,22 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 }));
 
 /* boot: show saved data instantly, then connect cloud sync */
-if (lsGet('ss.epoch', null) !== EPOCH) { ['ss.sessions', 'ss.override', 'ss.deleted'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} }); lsSet('ss.epoch', EPOCH); }
+migrateStorage();
 S.sessions = lsGet('ss.sessions', {});
+Object.values(S.sessions).forEach(upgradeSession);
 render();
 initCloud();
-
-/* ---------- standalone: backup + offline ---------- */
+/* ---------- standalone app: backup, restore, offline ---------- */
 async function exportBackup() {
-  const data = JSON.stringify({ app: 'live-to-100', exported: new Date().toISOString(), sessions: S.sessions }, null, 1);
+  const data = JSON.stringify({ app: 'live-to-100', schema: SCHEMA, exported: new Date().toISOString(), sessions: S.sessions }, null, 1);
   const name = 'live-to-100-backup-' + dateKey(new Date()) + '.json';
   try {
     const f = new File([data], name, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Live to 100 backup' }); return; }
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Live to 100 backup' }); lsSet('ss.lastBackup', Date.now()); render(); return; }
   } catch (e) { if (e && e.name === 'AbortError') return; }
   try {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' })); a.download = name;
-    document.body.appendChild(a); a.click(); a.remove(); toast('Backup saved');
+    document.body.appendChild(a); a.click(); a.remove(); lsSet('ss.lastBackup', Date.now()); toast('Backup saved'); render();
   } catch (e) { toast('Could not export'); }
 }
 document.addEventListener('change', e => {
@@ -1290,13 +1600,16 @@ document.addEventListener('change', e => {
   r.onload = () => {
     try {
       const d = JSON.parse(r.result), src = d.sessions || {}; let n = 0;
-      Object.values(src).forEach(s => { if (!s || !s.id) return; const l = S.sessions[s.id]; if (!l || (s.updatedAt || 0) > (l.updatedAt || 0)) { s.ep = EPOCH; S.sessions[s.id] = s; n++; } });
+      Object.values(src).forEach(s => { if (!s || !s.id) return; const l = S.sessions[s.id]; if (!l || (s.updatedAt || 0) > (l.updatedAt || 0)) { s.ep = EPOCH; S.sessions[s.id] = upgradeSession(s); n++; } });
       persistLocal(); render(); toast(n + ' workout' + (n === 1 ? '' : 's') + ' imported');
     } catch (err) { toast('That file did not work'); }
   };
   r.readAsText(file);
 });
 if ('serviceWorker' in navigator) window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+
+/* ask the browser to keep this site's data even when the phone is low on space */
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
 </script>
 </body>
